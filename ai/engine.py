@@ -50,13 +50,13 @@ def read_rows(path):
 def sigmoid(z):
     z=max(-40,min(40,z)); return 1/(1+math.exp(-z))
 
-def fit(train,target,iterations=400,rate=.08):
+def fit(train,target,iterations=400,rate=.08,features=FEATURES):
     if len(train)<80: raise DataError('At least 80 observations required')
     labels=[r[2][target] for r in train]
     if min(labels)==max(labels): raise DataError('Training data lacks both classes')
-    means=[statistics.mean(r[1][j] for r in train) for j in range(len(FEATURES))]
-    std=[statistics.pstdev(r[1][j] for r in train) or 1 for j in range(len(FEATURES))]
-    w=[0.]*(len(FEATURES)+1)
+    means=[statistics.mean(r[1][j] for r in train) for j in range(len(features))]
+    std=[statistics.pstdev(r[1][j] for r in train) or 1 for j in range(len(features))]
+    w=[0.]*(len(features)+1)
     for _ in range(iterations):
         g=[0.]*len(w)
         for _,x,y in train:
@@ -65,7 +65,7 @@ def fit(train,target,iterations=400,rate=.08):
             for j in range(len(g)):g[j]+=err*z[j]
         for j in range(len(w)):
             w[j]-=rate*(g[j]/len(train)+(0 if j==0 else .005*w[j]))
-    return dict(target=target,features=list(FEATURES),means=means,std=std,weights=w)
+    return dict(target=target,features=list(features),means=means,std=std,weights=w)
 
 def predict(model,x):
     z=[1.]+[(v-m)/s for v,m,s in zip(x,model['means'],model['std'])]
