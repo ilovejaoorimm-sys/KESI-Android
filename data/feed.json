@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 1,
   "method": "KESI-3.0 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-11T23:30:18.023371+09:00",
+  "generatedAt": "2026-11-12T00:45:31.273653+09:00",
   "indicators": [
     {
       "id": "delinquency",
@@ -77,7 +77,7 @@
       "previousPeriod": "2026-08-11",
       "releaseDate": null,
       "source": "한국은행 ECOS",
-      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/817Y002/D/20261101/20261111/010300000/",
+      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/817Y002/D/20261102/20261112/010300000/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공"
     },
     {
@@ -96,7 +96,7 @@
       "previousPeriod": "2026-08-11",
       "releaseDate": null,
       "source": "한국은행 ECOS",
-      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/731Y001/D/20261101/20261111/0000001/",
+      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/731Y001/D/20261102/20261112/0000001/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공"
     },
     {
