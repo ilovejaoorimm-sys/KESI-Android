@@ -174,16 +174,23 @@ def _table_series(rows):
 def _inline_series(text):
     found = []
     anchor = re.compile(r'PF\s*대출\s*연체율\s*\(\s*%\s*\)\s*:', re.I)
-    pair = re.compile(_PERIOD.pattern + r'\s*(\d+(?:\.\d+)?)')
+    pair = re.compile(_PERIOD.pattern + r'\s*(\d+(?:\.\d+)?)(?![\d.])')
     for match in anchor.finditer(text):
         values = {}
-        for item in pair.finditer(text[match.end():match.end() + 1400]):
+        cursor = match.end()
+        while cursor < len(text) and text[cursor].isspace():
+            cursor += 1
+        while item := pair.match(text, cursor):
             period = _period(item.group(0))
             value = float(item.group(3))
             if period and math.isfinite(value) and 0 <= value <= 100:
                 if period in values and values[period] != value:
                     raise ValueError('동일 분기 PF 연체율 충돌')
                 values[period] = value
+            separator = re.compile(r'\s*→\s*').match(text, item.end())
+            if separator is None:
+                break
+            cursor = separator.end()
         if len(values) >= 2:
             found.append(values)
     return found

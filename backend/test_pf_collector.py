@@ -27,6 +27,12 @@ def release(date, periods, values, row='PF대출', agency='금융위원회, 금�
 
 
 class PFCollectorTests(unittest.TestCase):
+    def test_inline_series_stops_before_next_statistic(self):
+        html = release('2026-10-13', ['2026-03', '2026-06'], [4.65, 4.56])
+        html = html.replace('4.56</p>', '4.56 다른 통계 (’26.6말) 15.1</p>')
+        result = parse_release(html, 'https://www.fsc.go.kr/no010101/87919', dt.date(2026, 11, 11))
+        self.assertEqual(result['value'], 4.56)
+
     def test_discovers_only_official_pf_meeting_details(self):
         html = listing('87919') + '<a href="https://evil.example/no010101/1">PF 상황 점검회의</a>'
         self.assertEqual(
