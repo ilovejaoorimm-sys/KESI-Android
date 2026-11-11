@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "method": "KESI-3.0 / 고정구간·가중합·스트레스 가산",
+  "indicators": [
+    {
+      "id": "delinquency",
+      "name": "은행 기업대출 연체율",
+      "unit": "%",
+      "weight": 0.25,
+      "low": 0.2,
+      "high": 2,
+      "direction": "up",
+      "maxAgeDays": 120,
+      "source": {
+        "adapter": "ecos",
+        "name": "은행연합회 / ECOS · 은행전체 기업대출, 1개월 이상",
+        "table": "901Y124",
+        "items": [
+          "MO3AA",
+          "AB"
+        ],
+        "expected": "기업대출",
+        "unit": "%",
+        "cycle": "M",
+        "transform": "raw"
+      }
+    },
+    {
+      "id": "unemployment",
+      "name": "실업률 · 계절조정",
+      "unit": "%",
+      "weight": 0.15,
+      "low": 2,
+      "high": 6,
+      "direction": "up",
+      "maxAgeDays": 120,
+      "source": {
+        "adapter": "ecos",
+        "name": "국가데이터처 / ECOS",
+        "table": "901Y027",
+        "items": [
+          "I61BC",
+          "I28B"
+        ],
+        "expected": "실업률",
+        "unit": "%",
+        "cycle": "M",
+        "transform": "raw"
+      }
+    },
+    {
+      "id": "housing",
+      "name": "전국 종합 주택가격 전년비",
+      "unit": "%",
+      "weight": 0.15,
+      "low": -10,
+      "high": 0,
+      "direction": "down",
+      "maxAgeDays": 120,
+      "source": {
+        "adapter": "ecos",
+        "name": "한국부동산원 / ECOS · 2026.06=100",
+        "table": "901Y149",
+        "items": [
+          "00",
+          "a0"
+        ],
+        "expected": "종합",
+        "unit": "2026.06=100",
+        "cycle": "M",
+        "transform": "yoy"
+      }
+    },
+    {
+      "id": "credit",
+      "name": "회사채 신용스프레드",
+      "unit": "%p",
+      "weight": 0.2,
+      "low": 0.3,
+      "high": 3,
+      "direction": "up",
+      "maxAgeDays": 10,
+      "source": {
+        "adapter": "ecos",
+        "name": "한국은행 ECOS",
+        "table": "817Y002",
+        "items": [
+          "010300000"
+        ],
+        "expected": "회사채(3년, AA-)",
+        "unit": "연%",
+        "cycle": "D",
+        "transform": "spread",
+        "subtract": {
+          "table": "817Y002",
+          "items": [
+            "010200000"
+          ],
+          "expected": "국고채(3년)",
+          "unit": "연%",
+          "cycle": "D"
+        }
+      }
+    },
+    {
+      "id": "fx",
+      "name": "원/달러 매매기준율",
+      "unit": "원",
+      "weight": 0.1,
+      "low": 1100,
+      "high": 1600,
+      "direction": "up",
+      "maxAgeDays": 10,
+      "source": {
+        "adapter": "ecos",
+        "name": "한국은행 ECOS",
+        "table": "731Y001",
+        "items": [
+          "0000001"
+        ],
+        "expected": "원/미국달러",
+        "unit": "원",
+        "cycle": "D",
+        "transform": "raw"
+      }
+    },
+    {
+      "id": "pf",
+      "name": "부동산 PF 연체율",
+      "unit": "%",
+      "weight": 0.15,
+      "low": 1,
+      "high": 10,
+      "direction": "up",
+      "maxAgeDays": 200,
+      "source": {
+        "adapter": "unavailable",
+        "name": "금융위원회·금융감독원",
+        "reason": "검증된 자동수집 경로 없음"
+      }
+    }
+  ]
+}

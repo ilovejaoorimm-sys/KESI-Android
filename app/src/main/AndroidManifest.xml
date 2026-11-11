@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <application android:usesCleartextTraffic="false" android:allowBackup="false" android:label="@string/app_name" android:icon="@drawable/ic_kesi" android:dataExtractionRules="@xml/data_extraction_rules" android:theme="@style/Theme.KESI">
+        <service android:name=".RefreshJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".KesiWidgetProvider" android:exported="true">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/kesi_widget_info" />
+        </receiver>
+    </application>
+</manifest>
