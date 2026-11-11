@@ -1,9 +1,13 @@
 import unittest,sys,pathlib,tempfile,csv
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]/'ai'))
-from engine import read_rows, DataError, FEATURES,TARGETS,sigmoid, market_events
+from engine import read_rows, DataError, FEATURES,TARGETS,sigmoid, market_events, probability_logit
 from audit_market import audit
 class Tests(unittest.TestCase):
  def test_sigmoid(self):self.assertAlmostEqual(sigmoid(0),.5)
+ def test_calibration_logit_clips_endpoints(self):
+  self.assertAlmostEqual(probability_logit(.5),0)
+  self.assertLess(probability_logit(0),-10)
+  self.assertGreater(probability_logit(1),10)
  def test_drawdown_and_unmatured_window(self):
   closes=[100,110,98,86,93,99]
   self.assertEqual(market_events(closes,0,5),(1,1))

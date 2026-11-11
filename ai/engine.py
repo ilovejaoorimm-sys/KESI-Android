@@ -81,6 +81,14 @@ def evaluate(model,rows,base_rate):
                 false_alarm_rate=sum(p>=.5 and not y for p,y in zip(probs,ys))/negatives if negatives else None,
                 detection_rate=sum(p>=.5 and y for p,y in zip(probs,ys))/positives if positives else None)
 
+def probability_logit(probability):
+    clipped = min(1-1e-8, max(1e-8, probability))
+    return math.log(clipped / (1-clipped))
+
+def calibration_rows(model, rows):
+    return [(day, [probability_logit(predict(model, values))], outcomes)
+            for day, values, outcomes in rows]
+
 def walk_forward(rows, target):
     """Use expanding training windows and disjoint chronological test blocks."""
     folds = []

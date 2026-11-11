@@ -6,7 +6,7 @@ import math
 import pathlib
 import statistics
 
-from engine import evaluate, fit, market_events
+from engine import calibration_rows, evaluate, fit, market_events
 
 FEATURES = ("return_5", "return_20", "volatility_20", "drawdown_60")
 
@@ -39,13 +39,27 @@ def backtest(observations):
                 if min(labels) == max(labels):
                     continue
                 model = fit(train, threshold, iterations=200, features=FEATURES)
-                folds.append(dict(start=test[0][0].isoformat(), end=test[-1][0].isoformat(),
-                                  **evaluate(model, test, statistics.mean(labels))))
+                result = dict(start=test[0][0].isoformat(), end=test[-1][0].isoformat(),
+                              **evaluate(model, test, statistics.mean(labels)))
+                split = int(.75 * len(train))
+                fitting, calibrating = train[:max(0, split-horizon)], train[split:]
+                has_both = lambda block: len({row[2][threshold] for row in block}) == 2
+                if min(len(fitting), len(calibrating)) >= 80 and has_both(fitting) and has_both(calibrating):
+                    core = fit(fitting, threshold, iterations=200, features=FEATURES)
+                    calibration = fit(calibration_rows(core, calibrating), threshold,
+                                      iterations=200, features=("logit",))
+                    result["calibrated"] = evaluate(calibration, calibration_rows(core, test),
+                                                     statistics.mean(labels))
+                    result["same_fit_uncalibrated"] = evaluate(core, test, statistics.mean(labels))
+                else:
+                    result["calibrated"] = None
+                folds.append(result)
             results[f"{horizon}d_{threshold}pct"] = folds
     return {"status":"research_only", "observations":len(dates),
             "first_session":dates[0].isoformat(), "last_session":dates[-1].isoformat(),
             "limitations":["ECOS close only","Official trading calendar not cross-checked",
-                           "No independent calibration or deployment approval"],
+                           "Research calibration only when both classes are available",
+                           "No deployment approval"],
             "folds":results}
 
 
