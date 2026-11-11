@@ -81,6 +81,25 @@ def evaluate(model,rows,base_rate):
                 false_alarm_rate=sum(p>=.5 and not y for p,y in zip(probs,ys))/negatives if negatives else None,
                 detection_rate=sum(p>=.5 and y for p,y in zip(probs,ys))/positives if positives else None)
 
+def walk_forward(rows, target):
+    """Use expanding training windows and disjoint chronological test blocks."""
+    folds = []
+    for start, end in ((.60, .70), (.70, .80), (.80, .90), (.90, 1)):
+        first, last = int(len(rows)*start), int(len(rows)*end)
+        test = rows[first:last]
+        if not test:
+            continue
+        # A conservative common embargo covers every forecast horizon.
+        boundary = test[0][0] - dt.timedelta(days=366)
+        train = [row for row in rows[:first] if row[0] < boundary]
+        if len(train) < 80 or len({row[2][target] for row in train}) < 2:
+            continue
+        model = fit(train,target)
+        base_rate = statistics.mean(row[2][target] for row in train)
+        folds.append(dict(test_start=test[0][0].isoformat(),test_end=test[-1][0].isoformat(),
+                          train_end=train[-1][0].isoformat(),**evaluate(model,test,base_rate)))
+    return folds
+
 def train_and_validate(path):
     rows=read_rows(path)
     if len(rows)<120: raise DataError('At least 120 real dated observations required')
@@ -98,7 +117,10 @@ def train_and_validate(path):
             continue
         score=evaluate(model,test,statistics.mean(r[2][target] for r in train))
         # Conservative: no deployment unless model beats constant-frequency test baseline.
-        score['eligible_for_review']=score['brier'] < score['baseline_brier'] and score['events']>=3
+        score['walk_forward'] = walk_forward(rows,target)
+        # Overlapping positive labels are not evidence of independent crises.
+        # Eligibility awaits independently documented event counts and calibration.
+        score['eligible_for_review']=False
         score['auto_deployed']=False
         reports[target]=score;models[target]=model
     return {'status':'research_only','training_end':train[-1][0].isoformat(),'test_start':test[0][0].isoformat(),'reports':reports,'models':models}
