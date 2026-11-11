@@ -1,0 +1,58 @@
+name: Refresh official statistics
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+  push:
+    branches: [main]
+    paths: ['config/**', 'backend/**', '.github/workflows/refresh-data.yml']
+permissions:
+  contents: read
+concurrency:
+  group: official-statistics
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s backend -p 'test_*.py'
+      - run: python backend/collect.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-official-feed
+          path: data/feed.json
+          retention-days: 7
+          if-no-files-found: error
+  publish:
+    needs: collect
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/download-artifact@v4
+        with:
+          name: validated-official-feed
+          path: /tmp/kesi-feed
+      - name: Publish only the statistics JSON
+        run: |
+          python3 -m json.tool /tmp/kesi-feed/feed.json > /dev/null
+          cp /tmp/kesi-feed/feed.json data/feed.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- data/feed.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update official statistics feed'
+            git push origin HEAD:main
+          fi
