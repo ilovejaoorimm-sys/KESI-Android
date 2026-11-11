@@ -28,7 +28,7 @@ public final class MainActivity extends Activity {
         ScrollView scroll=new ScrollView(this);scroll.setBackgroundColor(Color.rgb(11,18,32));scroll.setFillViewport(true);
         body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(22),dp(22),dp(22),dp(28));scroll.addView(body);setContentView(scroll);
         scroll.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});scroll.requestApplyInsets();
-        text(body,"KESI  /  KOREA",15,TEAL,true);text(body,"경제 스트레스 모니터",26,INK,true);text(body,"공식 원자료 · 사용자 정의 점수",13,MUTED,false);
+        text(body,"KESI 4.0 AI",15,TEAL,true);text(body,"경제 스트레스 모니터",26,INK,true);text(body,"공식 원자료 · 사용자 정의 점수",13,MUTED,false);
         text(body,remote!=null&&!remote.fresh()?"원격 자료 갱신 확인 필요 · 이전 자료":RemoteRepository.status(this),12,MUTED,false);
         LinearLayout top=card();text(top,remote==null?d.scoreText():remote.scoreText(),40,INK,true);
         text(top,KesiData.level(remote==null?d.score(false):remote.score(false)),18,TEAL,true);
@@ -37,6 +37,7 @@ public final class MainActivity extends Activity {
         text(top,remote==null?d.releaseSummary()+"\n수집 확인: "+d.checked+" KST":remote.publication()+"\n서버 갱신: "+remote.generatedAt+"\n설정 버전: "+remote.revision,12,MUTED,false);
         Button refresh=new Button(this);refresh.setText(refreshing?"공식 통계 확인 중…":"지금 새로고침");refresh.setEnabled(!refreshing);refresh.setOnClickListener(v->refresh());body.addView(refresh);
         Button pin=new Button(this);pin.setText("홈 화면에 위젯 추가");pin.setOnClickListener(v->{AppWidgetManager mgr=AppWidgetManager.getInstance(this);if(mgr.isRequestPinAppWidgetSupported())mgr.requestPinAppWidget(new ComponentName(this,KesiWidgetProvider.class),null,null);else Toast.makeText(this,"홈 화면을 길게 눌러 위젯 → KESI를 선택하세요",Toast.LENGTH_LONG).show();});body.addView(pin);
+        renderForecastStatus();
         if(remote!=null)renderRemote(remote);
         else for(int i=0;i<6;i++){
             KesiData.Metric m=d.metrics[i];LinearLayout c=card();text(c,String.format(Locale.KOREA,"%02d  %s  ·  %.0f%%",i+1,KesiData.NAMES[i],100*KesiData.WEIGHTS[i]),16,INK,true);
@@ -54,14 +55,23 @@ public final class MainActivity extends Activity {
         if(remote!=null)return;
         LinearLayout explain=card();text(explain,"점수 산정 기준",17,INK,true);text(explain,"공식 통계기관의 지수가 아닌 KESI 자체 규칙입니다. 금융위기 발생확률을 뜻하지 않습니다.\n\n6개 점수가 모두 유효할 때만 가중합과 위험등급을 계산합니다. 70점 이상 지표가 2개면 +3, 3개면 +6, 4개 이상이면 +10점, 최종 100점 상한입니다.\n\n0→100점 기준: 은행 기업대출 연체율 0.2→2%, 계절조정 실업률 2→6%, 전국 주택가격 전년비 하락 0→10%, 신용스프레드 0.3→3%p, 원/달러 1,100→1,600원, PF 연체율 1→10%. 범위 밖 값은 0 또는 100점입니다.\n\n등급: 정상 <30, 주의 <45, 경계 <60, 위기 전조 <75, 위기 ≥75.\n\n3개월 변화는 각 지표의 최신 관측기간과 3개월 전 관측기간을 비교한 수정계열 기준입니다. 당시 공개되어 있던 값으로 재현한 실시간 지수는 아닙니다. 일별 자료는 비교일 이전 7일 이내의 최근 영업일을 사용합니다.\n\n매 6시간 자동 갱신을 요청합니다. Android 절전·네트워크 상태에 따라 늦어질 수 있습니다. 일별 10일, 월별 120일, PF 200일을 초과한 기준기간은 종합 산출에서 제외합니다.\n\n미수집: 값이나 연결을 확인하지 못함. 발표일 미확인: API가 발표일을 제공하지 않음. 통계 기준기간·수집일을 발표일로 대체하지 않습니다.",13,MUTED,false);
     }
+    private void renderForecastStatus(){
+        LinearLayout crisis=card();
+        text(crisis,"AI-A · 경제·금융위기",17,INK,true);
+        text(crisis,"3개월 · 6개월 · 12개월\n검증 대기 · 배포된 모델 없음",14,MUTED,false);
+        LinearLayout market=card();
+        text(market,"AI-B · KOSPI 급락",17,INK,true);
+        text(market,"5 · 20 · 60거래일\n최대 낙폭 −10% 및 −20%\n검증 대기 · 배포된 모델 없음",14,MUTED,false);
+    }
     private void renderRemote(RemoteFeed feed){
         for(RemoteFeed.Entry m:feed.entries){
             LinearLayout c=card();text(c,m.name+(m.weight==0?" · 참고용":String.format(Locale.KOREA," · %.0f%%",m.weight*100)),17,INK,true);
-            boolean good=m.usable(KesiData.today());text(c,good?"수집 완료":m.value==null?"미수집":"오래된 자료 · 산출 제외",12,good?TEAL:Color.rgb(255,188,107),true);
+            boolean good=m.usable(KesiData.today());text(c,good?"수집 완료":m.value==null?"미수집":m.retained?"갱신 실패 · 마지막 확인값 · 산출 제외":"오래된 자료 · 산출 제외",12,good?TEAL:Color.rgb(255,188,107),true);
             text(c,number(m.value,m.unit)+(good?String.format(Locale.KOREA," → %.1f점",m.component(false)):""),22,INK,true);
             text(c,"기준기간: "+(m.period.isEmpty()?"미확인":m.period)+"\n발표일: "+(m.release.isEmpty()?"미확인":m.release),12,MUTED,false);
             text(c,m.previous==null?"3개월 비교: 산출 불가":"3개월 전: "+number(m.previous,m.unit)+" ("+m.previousPeriod+")\n점수 변화: "+String.format(Locale.KOREA,"%+.1f점",m.component(false)-m.component(true)),13,INK,false);
-            text(c,m.source+"\n"+m.reason,12,MUTED,false);
+            text(c,m.source+"\n"+m.reason+"\n마지막 확인: "+(m.observedAt.isEmpty()?"개별 시각 미제공":m.observedAt),12,MUTED,false);
+            if(good && feed.fresh() && m.weight>0)text(c,String.format(Locale.KOREA,"종합점수 기여 %.1f점 · 가산점 제외",m.component(false)*m.weight),12,MUTED,false);
             text(c,String.format(Locale.KOREA,"점수 구간 %.2f ~ %.2f %s · %s 위험 증가",m.low,m.high,m.unit,m.direction.equals("up")?"상승 시":"하락 시"),12,MUTED,false);
             if(!m.sourceUrl.isEmpty()){String url=m.sourceUrl;TextView link=text(c,"공식 원자료 열기 ↗",13,TEAL,true);link.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)));}catch(ActivityNotFoundException ignored){}});}
         }

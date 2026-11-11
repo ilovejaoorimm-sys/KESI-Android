@@ -120,16 +120,29 @@ def collect_metric(m, today, get=get_json, pf_get=get_html):
         result['reason'] = str(e)[:200]
     return result
 
-def build(config, today=None, get=get_json):
+def build(config, today=None, get=get_json, previous_feed=None):
     validate(config)
     now = dt.datetime.now(ZoneInfo('Asia/Seoul')); today = today or now.date()
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         rows = list(pool.map(lambda m:collect_metric(m,today,get),config['indicators']))
+    prior = previous_feed or {}
+    previous = {row['id']: row for row in prior.get('indicators', [])}
+    for row in rows:
+        old = previous.get(row['id'], {})
+        if row['status'] == 'ok':
+            row['observedAt'] = now.isoformat()
+        elif prior.get('revision') == config['revision']:
+            if old.get('status') == 'ok' and old.get('value') is not None:
+                row['lastKnown'] = {key: old.get(key) for key in ('value','period','releaseDate','sourceUrl')}
+                row['lastKnown']['observedAt'] = old.get('observedAt', prior.get('generatedAt'))
+            elif isinstance(old.get('lastKnown'), dict):
+                row['lastKnown'] = old['lastKnown']
     return dict(schema=1, revision=config['revision'], method=config['method'], generatedAt=now.isoformat(), indicators=rows)
 
 if __name__ == '__main__':
     config = json.loads((ROOT/'config/indicators.json').read_text())
-    feed = build(config)
     dest = ROOT/'data/feed.json'; dest.parent.mkdir(exist_ok=True)
+    previous_feed = json.loads(dest.read_text()) if dest.exists() else None
+    feed = build(config, previous_feed=previous_feed)
     temp = dest.with_suffix('.tmp'); temp.write_text(json.dumps(feed,ensure_ascii=False,indent=2,allow_nan=False)+'\n'); temp.replace(dest)
     print('Collected',sum(m['status']=='ok' for m in feed['indicators']),'/',len(feed['indicators']))

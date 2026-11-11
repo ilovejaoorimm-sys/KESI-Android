@@ -10,8 +10,10 @@ public final class RemoteFeed {
     public static final class Entry {
         public String id,name,unit,status,period,previousPeriod,release,source,sourceUrl,reason,direction;
         public double weight,low,high;public int maxAgeDays;public Double value,previous;
+        public String observedAt="";
+        public boolean retained;
         public boolean usable(LocalDate today){
-            if(!"ok".equals(status)||value==null||period.isEmpty())return false;
+            if(!"ok".equals(status)||retained||value==null||period.isEmpty())return false;
             LocalDate p=KesiData.periodDate(period);return !p.isAfter(today)&&!p.isBefore(today.minusDays(maxAgeDays));
         }
         public Double component(boolean past){Double v=past?previous:value;if(v==null)return null;double f=(v-low)/(high-low);return 100*Math.max(0,Math.min(1,"down".equals(direction)?1-f:f));}
@@ -35,6 +37,8 @@ public final class RemoteFeed {
             if(!Double.isFinite(e.weight)||!Double.isFinite(e.low)||!Double.isFinite(e.high)||e.weight<0||e.weight>1||e.low>=e.high||e.maxAgeDays<1||e.maxAgeDays>400)throw new JSONException("Scoring rule");
             e.direction=m.getString("direction");if(!e.direction.equals("up")&&!e.direction.equals("down"))throw new JSONException("Unknown scoring rule");
             e.status=m.getString("status");if(!e.status.equals("ok")&&!e.status.equals("missing"))throw new JSONException("State");
+            e.observedAt=nullable(m,"observedAt");
+            if(!e.observedAt.isEmpty() && OffsetDateTime.parse(e.observedAt).toInstant().isAfter(generated))throw new JSONException("Future collection");
             e.value=num(m,"value");e.previous=num(m,"previous");e.period=nullable(m,"period");e.previousPeriod=nullable(m,"previousPeriod");e.release=nullable(m,"releaseDate");e.sourceUrl=nullable(m,"sourceUrl");e.reason=nullable(m,"reason");
             if(e.reason.length()>500)throw new JSONException("Reason length");
             if(!e.sourceUrl.isEmpty()){
@@ -43,6 +47,14 @@ public final class RemoteFeed {
             }
             if(e.status.equals("ok")&&(e.value==null||e.period.isEmpty()||e.sourceUrl.isEmpty()))throw new JSONException("Missing provenance");
             if(e.status.equals("missing")&&(e.value!=null||e.previous!=null))throw new JSONException("Missing must not contain fallback values");
+            JSONObject prior=m.optJSONObject("lastKnown");
+            if(e.status.equals("missing") && prior!=null){
+                e.retained=true;
+                e.value=num(prior,"value");
+                e.period=nullable(prior,"period");
+                e.release=nullable(prior,"releaseDate");
+                e.observedAt=nullable(prior,"observedAt");
+            }
             if(!e.period.isEmpty()&&KesiData.periodDate(e.period).isAfter(today))throw new JSONException("Future observation");
             if(!e.release.isEmpty()&&LocalDate.parse(e.release).isAfter(today))throw new JSONException("Future publication");
             if(e.previous!=null){
