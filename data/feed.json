@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "revision": 1,
-  "method": "KESI-3.0 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-12T00:45:31.273653+09:00",
+  "revision": 2,
+  "method": "KESI-3.1 / 고정구간·가중합·스트레스 가산",
+  "generatedAt": "2026-11-12T00:51:47.215745+09:00",
   "indicators": [
     {
       "id": "delinquency",
@@ -114,9 +114,9 @@
       "period": null,
       "previousPeriod": null,
       "releaseDate": null,
-      "source": "금융위원회·금융감독원",
+      "source": "금융위원회·금융감독원 / 전 금융권 PF대출 연체율",
       "sourceUrl": null,
-      "reason": "검증된 자동수집 경로 없음"
+      "reason": "공식 PF 통계 미수집: 동일 분기 PF 연체율 충돌; 동일 분기 PF 연체율 충돌"
     }
   ]
 }
