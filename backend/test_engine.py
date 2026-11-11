@@ -2,8 +2,15 @@ import unittest,sys,pathlib,tempfile,csv
 sys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]/'ai'))
 from engine import read_rows, DataError, FEATURES,TARGETS,sigmoid, market_events, probability_logit
 from audit_market import audit
+from market_backtest import lagged_macro
 class Tests(unittest.TestCase):
  def test_sigmoid(self):self.assertAlmostEqual(sigmoid(0),.5)
+ def test_macro_uses_prior_common_date_and_rejects_stale_values(self):
+  names=("usdkrw","government_yield","corporate_yield")
+  macro={name:[{"session":"2026-01-02",name:value},{"session":"2026-01-05",name:99}]
+         for name,value in zip(names,(1400,3,4))}
+  result=lagged_macro([{"session":"2026-01-05"},{"session":"2026-01-15"}],macro)
+  self.assertEqual(result,{__import__('datetime').date(2026,1,5):[1400,3,1]})
  def test_calibration_logit_clips_endpoints(self):
   self.assertAlmostEqual(probability_logit(.5),0)
   self.assertLess(probability_logit(0),-10)
