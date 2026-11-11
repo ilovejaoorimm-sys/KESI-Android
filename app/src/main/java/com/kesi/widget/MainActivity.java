@@ -47,7 +47,7 @@ public final class MainActivity extends Activity {
             String change=m.value!=null&&m.previous!=null?String.format(Locale.KOREA,"3개월 원자료 변화: %+.2f %s\n비교기간: %s → %s",m.value-m.previous,(i==2?"%p (전년비 차이)":i==0||i==1||i==5?"%p":m.unit),m.previousPeriod,m.period):"3개월 원자료 변화: 산출 불가";
             text(c,change,13,INK,false);text(c,m.note,12,MUTED,false);
             if(!m.source.isEmpty())text(c,m.source+"\n수집: "+m.fetched+" KST",11,MUTED,false);
-            if(!m.sourceUrl.isEmpty()){
+            if(RemoteFeed.isOfficialSource(m.sourceUrl)){
                 TextView link=text(c,"공식 원자료 열기 ↗",13,TEAL,true);String url=m.sourceUrl;
                 link.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)));}catch(ActivityNotFoundException e){Toast.makeText(this,"브라우저가 필요합니다",Toast.LENGTH_SHORT).show();}});
             }
@@ -78,7 +78,7 @@ public final class MainActivity extends Activity {
             text(c,m.source+"\n"+m.reason+"\n마지막 확인: "+(m.observedAt.isEmpty()?"개별 시각 미제공":m.observedAt),12,MUTED,false);
             if(good && feed.fresh() && m.weight>0)text(c,String.format(Locale.KOREA,"종합점수 기여 %.1f점 · 가산점 제외",m.component(false)*m.weight),12,MUTED,false);
             text(c,String.format(Locale.KOREA,"점수 구간 %.2f ~ %.2f %s · %s 위험 증가",m.low,m.high,m.unit,m.direction.equals("up")?"상승 시":"하락 시"),12,MUTED,false);
-            if(!m.sourceUrl.isEmpty()){String url=m.sourceUrl;TextView link=text(c,"공식 원자료 열기 ↗",13,TEAL,true);link.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)));}catch(ActivityNotFoundException ignored){}});}
+            if(RemoteFeed.isOfficialSource(m.sourceUrl)){String url=m.sourceUrl;TextView link=text(c,"공식 원자료 열기 ↗",13,TEAL,true);link.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(url)));}catch(ActivityNotFoundException ignored){}});}
         }
         LinearLayout note=card();text(note,"원격 지표 업데이트",17,INK,true);
         text(note,"계산 기준: "+feed.method+"\n\n지표 목록·원자료·가중치·점수 구간은 서버 설정에 따라 자동 반영됩니다. 참고용 지표(가중치 0)는 종합점수에 포함하지 않습니다. 종합에 포함된 지표 중 하나라도 미수집이면 판정을 보류합니다.\n\n현재 및 3개월 전 자료에 같은 설정을 적용합니다. 과거 발표 당시의 지수를 복원한 값이 아닙니다.\n\n70점 이상 지표 2/3/4개 이상 시 +3/+6/+10점, 100점 상한. 등급: 정상 <30, 주의 <45, 경계 <60, 위기 전조 <75, 위기 ≥75. 점수는 자체 규칙이며 공식 위기확률이 아닙니다.\n\n서버 자료가 48시간 이상 갱신되지 않거나 연결 확인에 실패하면 종합 판정을 보류합니다. 앱과 서버는 각각 약 6시간 주기로 확인하므로 설정 반영에는 시간이 걸릴 수 있습니다.",13,MUTED,false);

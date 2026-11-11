@@ -13,6 +13,12 @@ public class RemoteFeedTest {
     }
     JSONObject base() throws Exception {return new JSONObject().put("schema",1).put("revision",1).put("method","test rules").put("generatedAt",OffsetDateTime.now(ZoneOffset.UTC).toString()).put("indicators",new JSONArray().put(row("base",1)));}
     RemoteFeed parse(JSONObject o) throws Exception {return RemoteFeed.parse(o.toString(),Instant.now());}
+    @Test public void officialLinksRequireExactHostsAndHttps(){
+        assertTrue(RemoteFeed.isOfficialSource("https://www.fsc.go.kr/no010101/87919"));
+        assertFalse(RemoteFeed.isOfficialSource("https://fsc.go.kr.example.invalid/"));
+        assertFalse(RemoteFeed.isOfficialSource("https://www.fsc.go.kr:444/"));
+        assertFalse(RemoteFeed.isOfficialSource("http://www.fsc.go.kr/"));
+    }
     @Test public void eachMarketTargetRequiresItsOwnFreshValidatedForecast() throws Exception {
         JSONObject good=new JSONObject().put("status","validated").put("definition","forecast_close")
                 .put("modelVersion","fixture").put("asOf",KesiData.today().toString()).put("probability",.2);

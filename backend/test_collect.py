@@ -2,6 +2,19 @@ import copy
 import datetime as dt
 import json
 import unittest
+from official_http import RestrictedRedirect
+
+
+class RedirectTests(unittest.TestCase):
+    def test_unapproved_destination_has_no_follow_up_request(self):
+        from urllib.request import Request
+        handler = RestrictedRedirect(lambda url: url.startswith("https://ecos.bok.or.kr/api/"))
+        request = Request("https://ecos.bok.or.kr/api/first")
+        self.assertIsNone(handler.redirect_request(request, None, 302, "", {},
+                                                   "https://example.invalid/api/second"))
+        approved = handler.redirect_request(request, None, 302, "", {},
+                                            "https://ecos.bok.or.kr/api/second")
+        self.assertEqual(approved.full_url, "https://ecos.bok.or.kr/api/second")
 from collect import ROOT, months, series, collect_metric, validate
 
 class CollectorTests(unittest.TestCase):

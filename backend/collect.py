@@ -8,6 +8,7 @@ import pathlib
 import re
 import urllib.request
 from zoneinfo import ZoneInfo
+from official_http import RestrictedRedirect
 from pf_collector import collect_pf, get_html
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -19,7 +20,8 @@ def months(d, n):
 
 def get_json(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'KESI-feed/3.1'})
-    with urllib.request.urlopen(req, timeout=20) as response:
+    opener = urllib.request.build_opener(RestrictedRedirect(lambda candidate: candidate.startswith(BASE)))
+    with opener.open(req, timeout=20) as response:
         raw = response.read(2_000_001)
     if len(raw) > 2_000_000:
         raise ValueError('응답 크기 초과')

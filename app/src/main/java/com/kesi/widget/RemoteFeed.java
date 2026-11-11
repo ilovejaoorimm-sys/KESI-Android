@@ -24,6 +24,20 @@ public final class RemoteFeed {
     }
     private static String str(JSONObject o,String k,int limit) throws JSONException {String s=o.getString(k);if(s.isEmpty()||s.length()>limit)throw new JSONException("Invalid "+k);return s;}
     private static String nullable(JSONObject o,String k){return o.isNull(k)?"":o.optString(k,"");}
+    static boolean isOfficialSource(String value){
+        try{
+            java.net.URI uri=new java.net.URI(value);
+            String host=uri.getHost();
+            if(!"https".equals(uri.getScheme())||host==null||uri.getUserInfo()!=null
+                    ||(uri.getPort()!=-1&&uri.getPort()!=443))return false;
+            switch(host.toLowerCase(Locale.ROOT)){
+                case "ecos.bok.or.kr":case "fsc.go.kr":case "www.fsc.go.kr":
+                case "fss.or.kr":case "www.fss.or.kr":case "data.krx.co.kr":
+                case "openapi.krx.co.kr":case "data-dbg.krx.co.kr":return true;
+                default:return false;
+            }
+        }catch(java.net.URISyntaxException ex){return false;}
+    }
     private static Double num(JSONObject o,String k) throws JSONException {if(o.isNull(k))return null;double v=o.getDouble(k);if(!Double.isFinite(v))throw new JSONException("Invalid number");return v;}
     public static RemoteFeed parse(String raw,Instant now) throws Exception {
         JSONObject o=new JSONObject(raw);if(o.getInt("schema")!=1)throw new JSONException("Unsupported feed schema");
@@ -39,7 +53,9 @@ public final class RemoteFeed {
                 if(item==null||!"validated".equals(item.optString("status"))
                         ||!"forecast_close".equals(item.optString("definition"))
                         ||item.optString("modelVersion").isEmpty())continue;
-                double p=item.optDouble("probability",Double.NaN);
+                Object rawProbability=item.opt("probability");
+                if(!(rawProbability instanceof Number))continue;
+                double p=((Number)rawProbability).doubleValue();
                 try{
                     LocalDate asOf=LocalDate.parse(item.optString("asOf"));
                     if(!asOf.isAfter(today)&&!asOf.isBefore(today.minusDays(7))
@@ -61,10 +77,7 @@ public final class RemoteFeed {
             if(!e.observedAt.isEmpty() && OffsetDateTime.parse(e.observedAt).toInstant().isAfter(generated))throw new JSONException("Future collection");
             e.value=num(m,"value");e.previous=num(m,"previous");e.period=nullable(m,"period");e.previousPeriod=nullable(m,"previousPeriod");e.release=nullable(m,"releaseDate");e.sourceUrl=nullable(m,"sourceUrl");e.reason=nullable(m,"reason");
             if(e.reason.length()>500)throw new JSONException("Reason length");
-            if(!e.sourceUrl.isEmpty()){
-                java.net.URI uri=new java.net.URI(e.sourceUrl);
-                if(!"https".equals(uri.getScheme())||uri.getHost()==null||uri.getUserInfo()!=null||(uri.getPort()!=-1&&uri.getPort()!=443))throw new JSONException("Invalid source URL");
-            }
+            if(!e.sourceUrl.isEmpty()&&!isOfficialSource(e.sourceUrl))throw new JSONException("Invalid source URL");
             if(e.status.equals("ok")&&(e.value==null||e.period.isEmpty()||e.sourceUrl.isEmpty()))throw new JSONException("Missing provenance");
             if(e.status.equals("missing")&&(e.value!=null||e.previous!=null))throw new JSONException("Missing must not contain fallback values");
             JSONObject prior=m.optJSONObject("lastKnown");
@@ -74,6 +87,9 @@ public final class RemoteFeed {
                 e.period=nullable(prior,"period");
                 e.release=nullable(prior,"releaseDate");
                 e.observedAt=nullable(prior,"observedAt");
+                String retainedUrl=nullable(prior,"sourceUrl");
+                if(isOfficialSource(retainedUrl))e.sourceUrl=retainedUrl;
+                if(!e.observedAt.isEmpty() && OffsetDateTime.parse(e.observedAt).toInstant().isAfter(generated))throw new JSONException("Future retained collection");
             }
             if(!e.period.isEmpty()&&KesiData.periodDate(e.period).isAfter(today))throw new JSONException("Future observation");
             if(!e.release.isEmpty()&&LocalDate.parse(e.release).isAfter(today))throw new JSONException("Future publication");

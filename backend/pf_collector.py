@@ -10,6 +10,7 @@ import re
 import urllib.parse
 import urllib.request
 from html.parser import HTMLParser
+from official_http import RestrictedRedirect
 
 LIST_URL = (
     'https://www.fsc.go.kr/no010101?srchKey=sj&srchText='
@@ -30,14 +31,16 @@ def _official_url(url, detail=False):
 
 
 def get_html(url):
-    if not _official_url(url, detail=bool(re.fullmatch(r'/no010101/\d+', urllib.parse.urlparse(url).path))):
+    def allowed(candidate):
+        detail = bool(re.fullmatch(r'/no010101/\d+', urllib.parse.urlparse(candidate).path))
+        return _official_url(candidate, detail=detail)
+    if not allowed(url):
         raise ValueError('금융위원회 공식 보도자료 URL이 아님')
     request = urllib.request.Request(
         url, headers={'User-Agent': 'KESI-feed/3.1 (+official PF statistics)'}
     )
-    with urllib.request.urlopen(request, timeout=25) as response:
-        if not _official_url(response.geturl(), detail=bool(re.fullmatch(r'/no010101/\d+', urllib.parse.urlparse(response.geturl()).path))):
-            raise ValueError('비공식 사이트로 리다이렉트')
+    opener = urllib.request.build_opener(RestrictedRedirect(allowed))
+    with opener.open(request, timeout=25) as response:
         raw = response.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
         raise ValueError('공식 자료 크기 제한 초과')
