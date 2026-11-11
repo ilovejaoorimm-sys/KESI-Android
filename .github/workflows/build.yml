@@ -13,19 +13,12 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare source in temporary build workspace
-        run: |
-          if [ ! -f settings.gradle ]; then
-            unzip -q KESI-source.zip -d /tmp/kesi-source
-            cp -r /tmp/kesi-source/KESI-Android/. .
-          fi
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Install Android SDK
-        run: sdkmanager 'platforms;android-35' 'build-tools;34.0.0'
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;34.0.0"'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
