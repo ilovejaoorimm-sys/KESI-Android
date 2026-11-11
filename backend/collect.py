@@ -8,6 +8,7 @@ import pathlib
 import re
 import urllib.request
 from zoneinfo import ZoneInfo
+from pf_collector import collect_pf, get_html
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BASE = 'https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/'
@@ -17,7 +18,7 @@ def months(d, n):
     return dt.date(y, m + 1, min(d.day, calendar.monthrange(y, m + 1)[1]))
 
 def get_json(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'KESI-feed/3.0'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'KESI-feed/3.1'})
     with urllib.request.urlopen(req, timeout=20) as response:
         raw = response.read(2_000_001)
     if len(raw) > 2_000_000:
@@ -67,7 +68,7 @@ def validate(config):
         if not m['name'] or len(m['name']) > 100: raise ValueError('이름 오류')
         total += m['weight']
         source = m['source']
-        if source['adapter'] not in ('ecos', 'unavailable'): raise ValueError('미지원 수집기')
+        if source['adapter'] not in ('ecos', 'fsc_pf', 'unavailable'): raise ValueError('미지원 수집기')
         if source['adapter'] == 'ecos':
             for s in [source] + ([source['subtract']] if 'subtract' in source else []):
                 if s['cycle'] not in ('D','M') or not re.fullmatch('[0-9A-Z]+', s['table']): raise ValueError('계열 설정 오류')
@@ -77,13 +78,16 @@ def validate(config):
             if source.get('transform') == 'yoy' and source['cycle'] != 'M': raise ValueError('전년비 주기')
     if abs(total - 1) > 1e-6: raise ValueError('종합 가중치 합은 1이어야 함')
 
-def collect_metric(m, today, get=get_json):
+def collect_metric(m, today, get=get_json, pf_get=get_html):
     result = {k: m[k] for k in ('id','name','unit','weight','low','high','direction','maxAgeDays')}
     result.update(status='missing', value=None, previous=None, period=None, previousPeriod=None,
                   releaseDate=None, source=m['source']['name'], sourceUrl=None, reason='')
     src = m['source']
     try:
         if src['adapter'] == 'unavailable': raise ValueError(src['reason'])
+        if src['adapter'] == 'fsc_pf':
+            result.update(collect_pf(today=today, fetch=pf_get))
+            return result
         monthly = src['cycle'] == 'M'; fmt = '%Y%m' if monthly else '%Y%m%d'
         end = today.replace(day=1) - dt.timedelta(days=1) if monthly else today
         begin = months(end, -20) if src.get('transform') == 'yoy' else months(end, -8) if monthly else end-dt.timedelta(days=10)

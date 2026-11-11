@@ -36,7 +36,8 @@ class CollectorTests(unittest.TestCase):
         r=collect_metric(self.m,dt.date(2026,11,11),lambda _:self.body([self.row(),self.row()]))
         self.assertEqual(r['status'],'missing')
     def test_pf_has_no_sample_fallback(self):
-        r=collect_metric(self.config['indicators'][-1],dt.date(2026,11,11))
+        def unavailable(_): raise OSError('official source unavailable')
+        r=collect_metric(self.config['indicators'][-1],dt.date(2026,11,11),pf_get=unavailable)
         self.assertEqual(r['status'],'missing');self.assertIsNone(r['value'])
     def test_housing_yoy_uses_same_base_and_three_month_history(self):
         m=self.config['indicators'][2]
