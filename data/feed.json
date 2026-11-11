@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 1,
   "method": "KESI-3.0 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-11T13:14:12.947250+09:00",
+  "generatedAt": "2026-11-11T13:38:21.442316+09:00",
   "indicators": [
     {
       "id": "delinquency",
