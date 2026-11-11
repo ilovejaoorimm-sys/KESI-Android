@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "revision": 1,
-  "method": "KESI-3.0 / 고정구간·가중합·스트레스 가산",
+  "revision": 2,
+  "method": "KESI-3.1 / 고정구간·가중합·스트레스 가산",
   "indicators": [
     {
       "id": "delinquency",
@@ -135,9 +135,8 @@
       "direction": "up",
       "maxAgeDays": 200,
       "source": {
-        "adapter": "unavailable",
-        "name": "금융위원회·금융감독원",
-        "reason": "검증된 자동수집 경로 없음"
+        "adapter": "fsc_pf",
+        "name": "금융위원회·금융감독원 / 전 금융권 PF대출 연체율"
       }
     }
   ]
