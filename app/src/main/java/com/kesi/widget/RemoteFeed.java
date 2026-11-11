@@ -7,6 +7,10 @@ import java.util.*;
 public final class RemoteFeed {
     public final List<Entry> entries=new ArrayList<>();
     public int revision;public String method,generatedAt;public boolean refreshFailed;
+    private final Map<String,Double> marketForecasts = new HashMap<>();
+    public Double marketForecast(int days,int percent){
+        return fresh()?marketForecasts.get(days+"d_"+percent+"pct"):null;
+    }
     public static final class Entry {
         public String id,name,unit,status,period,previousPeriod,release,source,sourceUrl,reason,direction;
         public double weight,low,high;public int maxAgeDays;public Double value,previous;
@@ -27,6 +31,22 @@ public final class RemoteFeed {
         f.method=str(o,"method",200);f.generatedAt=str(o,"generatedAt",80);
         Instant generated=OffsetDateTime.parse(f.generatedAt).toInstant();if(generated.isAfter(now.plusSeconds(300)))throw new JSONException("Future feed");
         LocalDate today=now.atZone(ZoneId.of("Asia/Seoul")).toLocalDate();
+        JSONObject forecasts=o.optJSONObject("marketForecasts");
+        if(forecasts!=null){
+            for(int days:new int[]{5,20,60})for(int percent:new int[]{10,20}){
+                String key=days+"d_"+percent+"pct";
+                JSONObject item=forecasts.optJSONObject(key);
+                if(item==null||!"validated".equals(item.optString("status"))
+                        ||!"forecast_close".equals(item.optString("definition"))
+                        ||item.optString("modelVersion").isEmpty())continue;
+                double p=item.optDouble("probability",Double.NaN);
+                try{
+                    LocalDate asOf=LocalDate.parse(item.optString("asOf"));
+                    if(!asOf.isAfter(today)&&!asOf.isBefore(today.minusDays(7))
+                            &&Double.isFinite(p)&&p>=0&&p<=1)f.marketForecasts.put(key,p);
+                }catch(DateTimeException ignored){ /* Invalid optional prediction stays hidden. */ }
+            }
+        }
         JSONArray a=o.getJSONArray("indicators");if(a.length()<1||a.length()>40)throw new JSONException("Metric count");
         Set<String> ids=new HashSet<>();double weights=0;
         for(int i=0;i<a.length();i++){

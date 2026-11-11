@@ -7,10 +7,28 @@ import math
 import pathlib
 import statistics
 
-from engine import calibration_rows, evaluate, fit, market_events
+from engine import calibration_rows, evaluate, fit, market_events, predict
 
 FEATURES = ("return_5", "return_20", "volatility_20", "drawdown_60")
 MACRO_FEATURES = ("usdkrw", "government_yield", "credit_spread")
+
+def event_metrics(test, probabilities, threshold, horizon, closes, cutoff=.5):
+    """Conservatively group overlapping positive outcome windows."""
+    groups = []
+    for (_, _, outcomes, _, index), probability in zip(test, probabilities):
+        if not outcomes[threshold]:
+            continue
+        crossing = next(j for j in range(index+1, index+horizon+1)
+                        if (closes[index]-closes[j])/closes[index] >= int(threshold)/100)
+        if not groups or index >= groups[-1][0]:
+            groups.append([index+horizon, []])
+        groups[-1][0] = index+horizon
+        if probability >= cutoff:
+            groups[-1][1].append(crossing-index)
+    lead = [max(days) for _, days in groups if days]
+    return dict(overlapping_event_groups=len(groups), detected_groups=len(lead),
+                group_detection_rate=len(lead)/len(groups) if groups else None,
+                median_lead_sessions=statistics.median(lead) if lead else None)
 
 
 def lagged_macro(observations, macro):
@@ -60,7 +78,7 @@ def backtest(observations, macro=None, include_macro=True):
             events = market_events(closes, i, horizon)
             if use_macro:
                 features += extra[dates[i]]
-            rows.append((dates[i], features, dict(zip(("10", "20"), events)), dates[i+horizon]))
+            rows.append((dates[i], features, dict(zip(("10", "20"), events)), dates[i+horizon], i))
         for threshold in ("10", "20"):
             folds = []
             for lo, hi in ((.60,.70),(.70,.80),(.80,.90),(.90,1)):
@@ -76,9 +94,12 @@ def backtest(observations, macro=None, include_macro=True):
                 if min(labels) == max(labels):
                     continue
                 model = fit([row[:3] for row in train], threshold, iterations=200, features=feature_names)
-                test = [row[:3] for row in test]
+                timed_test = test
+                test = [row[:3] for row in timed_test]
                 result = dict(start=test[0][0].isoformat(), end=test[-1][0].isoformat(),
                               **evaluate(model, test, statistics.mean(labels)))
+                result.update(event_metrics(timed_test,[predict(model,row[1]) for row in test],
+                                            threshold,horizon,closes))
                 split = int(.75 * len(train))
                 calibrating = [row[:3] for row in train[split:]]
                 fitting = [row[:3] for row in train[:split] if row[3] < calibrating[0][0]]

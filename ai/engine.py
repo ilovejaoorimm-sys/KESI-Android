@@ -7,17 +7,13 @@ TARGETS = ('crisis_3m','crisis_6m','crisis_12m') + tuple(
 )
 
 def market_events(closes, index, horizon):
-    """Drawdown from the running peak beginning at the forecast close."""
+    """Maximum decline relative to the close on the prediction date."""
     if index + horizon >= len(closes):
         return None
     window = closes[index:index + horizon + 1]
     if any(not math.isfinite(price) or price <= 0 for price in window):
         raise ValueError('Invalid KOSPI close')
-    peak = window[0]
-    drawdown = 0
-    for price in window[1:]:
-        peak = max(peak, price)
-        drawdown = max(drawdown, (peak - price) / peak)
+    drawdown = (window[0] - min(window[1:])) / window[0]
     return tuple(int(drawdown >= threshold) for threshold in (.10, .20))
 
 class DataError(ValueError): pass

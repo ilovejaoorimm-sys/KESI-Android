@@ -17,7 +17,7 @@ class Tests(unittest.TestCase):
   self.assertGreater(probability_logit(1),10)
  def test_drawdown_and_unmatured_window(self):
   closes=[100,110,98,86,93,99]
-  self.assertEqual(market_events(closes,0,5),(1,1))
+  self.assertEqual(market_events(closes,0,5),(1,0))
   self.assertIsNone(market_events(closes,1,5))
  def test_audit_excludes_unmatured_windows(self):
   rows=[dict(session=f'2026-01-{i:02d}',close=100) for i in range(1,9)]

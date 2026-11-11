@@ -13,6 +13,18 @@ public class RemoteFeedTest {
     }
     JSONObject base() throws Exception {return new JSONObject().put("schema",1).put("revision",1).put("method","test rules").put("generatedAt",OffsetDateTime.now(ZoneOffset.UTC).toString()).put("indicators",new JSONArray().put(row("base",1)));}
     RemoteFeed parse(JSONObject o) throws Exception {return RemoteFeed.parse(o.toString(),Instant.now());}
+    @Test public void eachMarketTargetRequiresItsOwnFreshValidatedForecast() throws Exception {
+        JSONObject good=new JSONObject().put("status","validated").put("definition","forecast_close")
+                .put("modelVersion","fixture").put("asOf",KesiData.today().toString()).put("probability",.2);
+        JSONObject waiting=new JSONObject(good.toString()).put("status","waiting");
+        JSONObject stale=new JSONObject(good.toString()).put("asOf",KesiData.today().minusDays(8).toString());
+        RemoteFeed feed=parse(base().put("marketForecasts",new JSONObject()
+                .put("5d_10pct",good).put("60d_20pct",waiting).put("20d_10pct",stale)));
+        assertEquals(.2,feed.marketForecast(5,10),.0001);
+        assertNull(feed.marketForecast(60,20));
+        assertNull(feed.marketForecast(20,10));
+        assertNull(feed.marketForecast(5,20));
+    }
     @Test public void seventhMetricRequiresNoRecompile() throws Exception {JSONObject o=base();JSONArray a=o.getJSONArray("indicators");for(int i=0;i<6;i++)a.put(row("extra"+i,0));RemoteFeed f=parse(o);assertEquals(7,f.entries.size());assertEquals(50.,f.score(false),.0001);assertEquals(40.,f.score(true),.0001);}
     @Test public void newScoredMetricUsesConfiguredWeights() throws Exception {JSONObject o=base();o.getJSONArray("indicators").getJSONObject(0).put("weight",.5);o.getJSONArray("indicators").put(row("extra",.5).put("value",1));assertEquals(30.,parse(o).score(false),.0001);}
     @Test public void missingMonitorDoesNotBlockIndex() throws Exception {JSONObject o=base();o.getJSONArray("indicators").put(row("extra",0).put("status","missing").put("value",JSONObject.NULL).put("previous",JSONObject.NULL));assertEquals(50.,parse(o).score(false),.0001);}
