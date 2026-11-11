@@ -1,6 +1,7 @@
 """Official Bank of Korea daily KOSPI closes for research."""
 import argparse
 import calendar
+import concurrent.futures
 import datetime as dt
 import json
 
@@ -13,17 +14,26 @@ SOURCE = dict(table="802Y001", cycle="D", items=["0001000"],
 def history(start, end):
     if start > end or end > dt.date.today():
         raise ValueError("Invalid history dates")
-    observations = []
+    ranges = []
     while start <= end:
         month_end = start.replace(day=calendar.monthrange(start.year, start.month)[1])
         stop = min(month_end, end)
-        values, _ = series(SOURCE, start.strftime("%Y%m%d"), stop.strftime("%Y%m%d"))
+        ranges.append((start, stop))
+        start = stop + dt.timedelta(days=1)
+
+    def read_month(bounds):
+        first, last = bounds
+        values, _ = series(SOURCE, first.strftime("%Y%m%d"), last.strftime("%Y%m%d"))
+        observations = []
         for stamp, close in sorted(values.items()):
             session = dt.datetime.strptime(stamp, "%Y%m%d").date()
             if close <= 0:
                 raise ValueError("Invalid KOSPI close")
             observations.append({"session": session.isoformat(), "close": close})
-        start = stop + dt.timedelta(days=1)
+        return observations
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        observations = [row for month in executor.map(read_month, ranges) for row in month]
     return {"source": "한국은행 ECOS 802Y001/0001000", "observations": observations}
 
 
