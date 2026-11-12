@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 2,
   "method": "KESI-3.1 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-12T09:48:51.137509+09:00",
+  "generatedAt": "2026-11-13T00:23:55.698397+09:00",
   "indicators": [
     {
       "id": "delinquency",
@@ -71,13 +71,13 @@
       "direction": "up",
       "maxAgeDays": 10,
       "status": "ok",
-      "value": 0.681,
-      "previous": 0.6959999999999997,
-      "period": "2026-11-11",
-      "previousPeriod": "2026-08-11",
+      "value": 0.6779999999999999,
+      "previous": 0.7050000000000005,
+      "period": "2026-11-12",
+      "previousPeriod": "2026-08-12",
       "releaseDate": null,
       "source": "한국은행 ECOS",
-      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/817Y002/D/20261102/20261112/010300000/",
+      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/817Y002/D/20261103/20261113/010300000/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공"
     },
     {
@@ -90,13 +90,13 @@
       "direction": "up",
       "maxAgeDays": 10,
       "status": "ok",
-      "value": 1343.3,
-      "previous": 1415.3,
-      "period": "2026-11-11",
-      "previousPeriod": "2026-08-11",
+      "value": 1336.7,
+      "previous": 1415.0,
+      "period": "2026-11-12",
+      "previousPeriod": "2026-08-12",
       "releaseDate": null,
       "source": "한국은행 ECOS",
-      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/731Y001/D/20261102/20261112/0000001/",
+      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/731Y001/D/20261103/20261113/0000001/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공"
     },
     {
