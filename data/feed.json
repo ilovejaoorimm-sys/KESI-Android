@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 2,
   "method": "KESI-3.1 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-12T02:07:18.604942+09:00",
+  "generatedAt": "2026-11-12T09:48:51.137509+09:00",
   "indicators": [
     {
       "id": "delinquency",
@@ -33,10 +33,10 @@
       "direction": "up",
       "maxAgeDays": 120,
       "status": "ok",
-      "value": 2.6,
-      "previous": 2.7,
-      "period": "2026-09",
-      "previousPeriod": "2026-06",
+      "value": 2.5,
+      "previous": 2.8,
+      "period": "2026-10",
+      "previousPeriod": "2026-07",
       "releaseDate": null,
       "source": "국가데이터처 / ECOS",
       "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/901Y027/M/202602/202610/I61BC/I28B/",
