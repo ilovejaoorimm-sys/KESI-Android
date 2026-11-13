@@ -6,6 +6,8 @@ import json
 import math
 import pathlib
 import re
+import time
+import urllib.error
 import urllib.request
 from zoneinfo import ZoneInfo
 from pf_collector import collect_pf, get_html
@@ -17,7 +19,23 @@ def months(d, n):
     y, m = divmod(d.year * 12 + d.month - 1 + n, 12)
     return dt.date(y, m + 1, min(d.day, calendar.monthrange(y, m + 1)[1]))
 
+def is_transient(error):
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code in (408, 429, 500, 502, 503, 504)
+    if isinstance(error, urllib.error.URLError):
+        return isinstance(error.reason, (TimeoutError, ConnectionError))
+    return isinstance(error, (TimeoutError, ConnectionError))
+
 def get_json(url):
+    for attempt in range(3):
+        try:
+            return read_json(url)
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if attempt == 2 or not is_transient(error):
+                raise
+            time.sleep(2 ** attempt)
+
+def read_json(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'KESI-feed/3.1'})
     with urllib.request.urlopen(req, timeout=20) as response:
         raw = response.read(2_000_001)
@@ -118,18 +136,48 @@ def collect_metric(m, today, get=get_json, pf_get=get_html):
                       reason='공식 ECOS 원자료 · 발표일 미제공')
     except Exception as e:
         result['reason'] = str(e)[:200]
+        if src['adapter'] in ('ecos', 'fsc_pf') and is_transient(e):
+            result['transientFailure'] = True
     return result
 
-def build(config, today=None, get=get_json):
+def build(config, today=None, get=get_json, previous_feed=None):
     validate(config)
     now = dt.datetime.now(ZoneInfo('Asia/Seoul')); today = today or now.date()
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         rows = list(pool.map(lambda m:collect_metric(m,today,get),config['indicators']))
+    prior_rows = {}
+    if previous_feed and all(previous_feed.get(key) == config[key] for key in ('schema', 'revision', 'method')):
+        prior_rows = {row['id']: row for row in previous_feed['indicators']}
+    for index, row in enumerate(rows):
+        if row['status'] == 'ok':
+            row['observedAt'] = now.isoformat()
+        if not row.pop('transientFailure', False):
+            continue
+        source_label = 'ECOS' if config['indicators'][index]['source']['adapter'] == 'ecos' else '금융위원회'
+        row['reason'] = f'{source_label} 연결 지연 · 공식 자료 미수집'
+        prior = prior_rows.get(row['id'])
+        if not prior:
+            continue
+        identity = ('name', 'unit', 'weight', 'low', 'high', 'direction', 'maxAgeDays', 'source')
+        if any(prior.get(key) != row[key] for key in identity):
+            continue
+        if prior['status'] != 'ok':
+            if 'lastKnown' in prior:
+                row['lastKnown'] = prior['lastKnown']
+            continue
+        observed = prior.get('observedAt') or previous_feed['generatedAt']
+        if now - dt.datetime.fromisoformat(observed) <= dt.timedelta(hours=48):
+            rows[index] = dict(prior, observedAt=observed, reason=f'{source_label} 연결 지연 · 마지막 확인 자료')
+        else:
+            row['reason'] = f'{source_label} 연결 지연 · 마지막 확인 후 48시간 경과'
+            row['lastKnown'] = {key: prior[key] for key in ('value', 'period', 'releaseDate')}
+            row['lastKnown']['observedAt'] = observed
     return dict(schema=1, revision=config['revision'], method=config['method'], generatedAt=now.isoformat(), indicators=rows)
 
 if __name__ == '__main__':
     config = json.loads((ROOT/'config/indicators.json').read_text())
-    feed = build(config)
     dest = ROOT/'data/feed.json'; dest.parent.mkdir(exist_ok=True)
+    previous_feed = json.loads(dest.read_text()) if dest.exists() else None
+    feed = build(config, previous_feed=previous_feed)
     temp = dest.with_suffix('.tmp'); temp.write_text(json.dumps(feed,ensure_ascii=False,indent=2,allow_nan=False)+'\n'); temp.replace(dest)
     print('Collected',sum(m['status']=='ok' for m in feed['indicators']),'/',len(feed['indicators']))

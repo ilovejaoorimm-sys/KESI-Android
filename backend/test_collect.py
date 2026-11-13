@@ -2,7 +2,9 @@ import copy
 import datetime as dt
 import json
 import unittest
-from collect import ROOT, months, series, collect_metric, validate
+from unittest.mock import patch
+from urllib.error import URLError
+from collect import ROOT, months, series, collect_metric, validate, build, get_json
 
 class CollectorTests(unittest.TestCase):
     def setUp(self):
@@ -59,6 +61,29 @@ class CollectorTests(unittest.TestCase):
             return self.body(rows)
         r=collect_metric(m,dt.date(2026,11,10),get)
         self.assertEqual(r['period'],'2026-11-09');self.assertEqual(r['previousPeriod'],'2026-08-07');self.assertAlmostEqual(r['value'],.7)
+    def test_retry_temporary_timeout(self):
+        with patch('collect.read_json', side_effect=[URLError(TimeoutError()), {'ok': True}]) as read:
+            with patch('collect.time.sleep'):
+                self.assertEqual(get_json('https://ecos.bok.or.kr/'), {'ok': True})
+        self.assertEqual(read.call_count, 2)
+
+    def test_timeout_preserves_prior_and_expires_it(self):
+        self.config['indicators'] = [self.m]
+        self.m['weight'] = 1
+        today = dt.date(2026, 11, 13)
+        good = build(self.config, today, lambda _: self.body([self.row()]))
+        def timeout(_):
+            raise URLError(TimeoutError('timed out'))
+        observed = good['indicators'][0]['observedAt']
+        retained = build(self.config, today, timeout, good)['indicators'][0]
+        self.assertEqual((retained['value'], retained['observedAt']), (0.8, observed))
+        good['indicators'][0]['observedAt'] = '2020-01-01T00:00:00+09:00'
+        expired = build(self.config, today, timeout, good)['indicators'][0]
+        self.assertEqual((expired['status'], expired['value'], expired['lastKnown']['value']),
+                         ('missing', None, 0.8))
+        invalid = build(self.config, today, lambda _: {'RESULT': {'CODE': 'INVALID'}}, good)
+        self.assertNotIn('lastKnown', invalid['indicators'][0])
+
     def test_unknown_transform_rejected(self):
         self.m['source']['transform']='eval'
         with self.assertRaises(ValueError):validate(self.config)
