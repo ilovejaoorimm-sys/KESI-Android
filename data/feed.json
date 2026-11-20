@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 2,
   "method": "KESI-3.1 / 고정구간·가중합·스트레스 가산",
-  "generatedAt": "2026-11-20T05:44:58.579398+09:00",
+  "generatedAt": "2026-11-20T16:25:48.885266+09:00",
   "indicators": [
     {
       "id": "delinquency",
@@ -22,7 +22,7 @@
       "source": "은행연합회 / ECOS · 은행전체 기업대출, 1개월 이상",
       "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/901Y124/M/202602/202610/MO3AA/AB/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     },
     {
       "id": "unemployment",
@@ -42,7 +42,7 @@
       "source": "국가데이터처 / ECOS",
       "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/901Y027/M/202602/202610/I61BC/I28B/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     },
     {
       "id": "housing",
@@ -54,15 +54,15 @@
       "direction": "down",
       "maxAgeDays": 120,
       "status": "ok",
-      "value": 3.166496424923393,
-      "previous": 2.459016393442637,
-      "period": "2026-09",
-      "previousPeriod": "2026-06",
+      "value": 3.1568228105906204,
+      "previous": 2.763561924257929,
+      "period": "2026-10",
+      "previousPeriod": "2026-07",
       "releaseDate": null,
       "source": "한국부동산원 / ECOS · 2026.06=100",
-      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/11/20/901Y149/M/202502/202610/00/a0/",
+      "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/21/30/901Y149/M/202502/202610/00/a0/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     },
     {
       "id": "credit",
@@ -82,7 +82,7 @@
       "source": "한국은행 ECOS",
       "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/817Y002/D/20261110/20261120/010300000/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     },
     {
       "id": "fx",
@@ -94,15 +94,15 @@
       "direction": "up",
       "maxAgeDays": 10,
       "status": "ok",
-      "value": 1331.1,
-      "previous": 1411.0,
-      "period": "2026-11-19",
-      "previousPeriod": "2026-08-19",
+      "value": 1330.8,
+      "previous": 1402.5,
+      "period": "2026-11-20",
+      "previousPeriod": "2026-08-20",
       "releaseDate": null,
       "source": "한국은행 ECOS",
       "sourceUrl": "https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/10/731Y001/D/20261110/20261120/0000001/",
       "reason": "공식 ECOS 원자료 · 발표일 미제공",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     },
     {
       "id": "pf",
@@ -122,7 +122,7 @@
       "source": "금융위원회·금융감독원 / 전 금융권 PF대출 연체율",
       "sourceUrl": "https://www.fsc.go.kr/no010101/87919",
       "reason": "금융위원회 보도자료 목록에서 최신 공동 발표를 자동 확인",
-      "observedAt": "2026-11-20T05:44:58.579398+09:00"
+      "observedAt": "2026-11-20T16:25:48.885266+09:00"
     }
   ]
 }
